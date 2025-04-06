@@ -117,14 +117,12 @@ function checkGuess() {
 
     if (guess === state.secret) {
         console.log('Game Won! Attempting to enable share button.');
-        state.currentRow++;
-        state.currentCol = 0;
+        gameEnded = true; // Set global game ended variable
         gameJustEnded = true;
         setTimeout(() => alert('Congratulations! You won!'), 100); // Shorten delay
-    } else if (state.currentRow === 6) {
+    } else if (state.currentRow === 5) { // Change to 5 since we're on the last row before incrementing
         console.log('Game Lost! Attempting to enable share button.');
-        state.currentRow++;
-        state.currentCol = 0;
+        gameEnded = true; // Set global game ended variable
         gameJustEnded = true;
         setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 100); // Shorten delay
     }
@@ -146,12 +144,28 @@ function checkGuess() {
 
 // Update keyboard colors
 function updateKeyboard(letter, result) {
-    const key = document.querySelector(`.key:not(.enter):not(.backspace)`);
+    // Find the specific key that matches this letter
+    const allKeys = document.querySelectorAll('.key');
+    let key = null;
     
-    if (key.classList.contains('correct')) return;
-    if (result === 'correct' || (result === 'present' && !key.classList.contains('present'))) {
+    // Find the key with this letter
+    for (const k of allKeys) {
+        if (k.textContent.toLowerCase() === letter.toLowerCase()) {
+            key = k;
+            break;
+        }
+    }
+    
+    // If no key found or already correct, exit
+    if (!key || key.classList.contains('correct')) return;
+    
+    // Update the key's class based on result
+    if (result === 'correct') {
         key.classList.remove('absent', 'present');
-        key.classList.add(result);
+        key.classList.add('correct');
+    } else if (result === 'present' && !key.classList.contains('correct')) {
+        key.classList.remove('absent');
+        key.classList.add('present');
     } else if (result === 'absent' && !key.classList.contains('present') && !key.classList.contains('correct')) {
         key.classList.add('absent');
     }
@@ -162,13 +176,19 @@ initGame();
 
 function createEmojiGrid() {
     let emojiGrid = '';
-    const rows = document.querySelectorAll('.row');
+    // Get all word rows
+    const rows = document.querySelectorAll('.word-row');
+    
+    // For each completed row
     for (let i = 0; i < state.currentRow; i++) {
-        const tiles = rows[i].querySelectorAll('.tile');
-        for (let tile of tiles) {
-            if (tile.classList.contains('correct')) {
+        // Get all letter boxes in this row
+        const boxes = rows[i].querySelectorAll('.letter-box');
+        
+        // Add emoji for each box based on its class
+        for (let box of boxes) {
+            if (box.classList.contains('correct')) {
                 emojiGrid += '🟩';
-            } else if (tile.classList.contains('present')) {
+            } else if (box.classList.contains('present')) {
                 emojiGrid += '🟨';
             } else {
                 emojiGrid += '⬛';
@@ -190,10 +210,18 @@ if (!shareButton) {
 }
 
 function shareScore() {
-    if (state.currentRow === 6) return;
+    // Don't allow sharing if the game is still in progress
+    if (state.currentRow < 1 || (!gameEnded && state.currentRow < 6)) {
+        alert("Finish the game before sharing your score!");
+        return;
+    }
     
     const tries = state.currentRow;
-    const won = tries === 6;
+    // Determine if the player won by checking if the last row matches the secret word
+    const lastGuessRow = Math.min(tries, 6) - 1;
+    const lastGuess = state.grid[lastGuessRow].join('');
+    const won = lastGuess === state.secret;
+    
     const emojiGrid = createEmojiGrid();
     
     const shareText = `Panda's Wordle+ ${won ? tries : 'X'}/6\n\n${emojiGrid}\nhttps://panda2126.github.io/wordle-plus/`;
@@ -208,6 +236,9 @@ function shareScore() {
             .catch(() => alert('Failed to copy results'));
     }
 }
+
+// Add a global variable to track game state
+let gameEnded = false;
 
 // Add event listener (only if button was found)
 if (shareButton) {
