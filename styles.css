@@ -153,7 +153,7 @@ h1 {
 
 /* Add styles for the WhatsApp button */
 .whatsapp-share-button {
-    display: block;
+    display: none; /* Hide by default */
     margin: 10px auto;
     padding: 12px 24px;
     background-color: #25D366;

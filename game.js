@@ -10,6 +10,47 @@ const state = {
 // Word list (we'll expand this later)
 const WORD_LIST = ['python', 'coding', 'gaming', 'script', 'player', 'cursor', 'syntax', 'coffee', 'laptop', 'github', 'branch', 'commit'];
 
+// Find the share button element at the top of your file
+const shareButton = document.getElementById('share-button');
+let whatsappButton = null; // Keep a reference to the WhatsApp button
+
+if (!shareButton) {
+    console.error('Share button element not found! Check index.html');
+} else {
+    console.log('Share button found:', shareButton);
+    // Ensure button starts disabled visually and functionally
+    shareButton.disabled = true;
+}
+
+// Function to create and setup the WhatsApp button (run once)
+function setupWhatsAppButton() {
+    if (document.querySelector('.whatsapp-share-button')) return; // Already created
+    
+    whatsappButton = document.createElement('button');
+    whatsappButton.textContent = 'Share to WhatsApp';
+    whatsappButton.className = 'whatsapp-share-button'; // Class controls visibility via CSS
+    
+    whatsappButton.addEventListener('click', () => {
+        if (!state.gameOver) return; // Only share if game is over
+        
+        const tries = state.currentRow + 1; 
+        const won = state.secret === state.grid[state.currentRow].join(''); // Check current row on win
+        const emojiGrid = createEmojiGrid();
+        const shareText = `Panda's Wordle+ ${won ? tries : 'X'}/6\n\n${emojiGrid}\nhttps://panda2126.github.io/wordle-plus/`;
+        const encodedText = encodeURIComponent(shareText);
+        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+    });
+    
+    // Add the button after the Share Score button
+    if (shareButton && shareButton.parentNode) {
+        // Insert after the share button
+        shareButton.parentNode.insertBefore(whatsappButton, shareButton.nextSibling);
+        console.log('WhatsApp button created and added to DOM.');
+    } else {
+        console.error('Could not find parent node for share button to insert WhatsApp button.');
+    }
+}
+
 // Initialize game
 function initGame() {
     // Reset the game state
@@ -33,11 +74,9 @@ function initGame() {
         key.className = 'key';
     });
     
-    // Reset share button
-    const shareButton = document.getElementById('share-button');
-    if (shareButton) {
-        shareButton.disabled = true;
-    }
+    // Disable original share button and hide WhatsApp button
+    if (shareButton) shareButton.disabled = true;
+    if (whatsappButton) whatsappButton.style.display = 'none';
     
     // Remove existing listeners to prevent duplicates
     document.removeEventListener('keydown', handleKeyPress);
@@ -66,6 +105,9 @@ function initGame() {
             }
         });
     });
+
+    // Ensure WhatsApp button exists in the DOM
+    setupWhatsAppButton(); 
 }
 
 // Handle key press
@@ -167,20 +209,22 @@ function checkGuess() {
     });
     
     // Game end logic
+    let gameJustEnded = false;
     if (guess === state.secret) {
         state.gameOver = true;
-        const shareButton = document.getElementById('share-button');
-        if (shareButton) {
-            shareButton.disabled = false;
-        }
+        gameJustEnded = true;
         setTimeout(() => alert('Congratulations! You won!'), 600);
     } else if (state.currentRow === 5) { // Last row
         state.gameOver = true;
-        const shareButton = document.getElementById('share-button');
-        if (shareButton) {
-            shareButton.disabled = false;
-        }
+        gameJustEnded = true;
         setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 600);
+    }
+
+    // If game just ended, enable share buttons
+    if (gameJustEnded) {
+        if (shareButton) shareButton.disabled = false;
+        if (whatsappButton) whatsappButton.style.display = 'block'; // Show WhatsApp button
+        console.log('Game ended. Share buttons enabled/shown.');
     } else {
         // Move to the next row
         state.currentRow++;
@@ -246,63 +290,19 @@ function createEmojiGrid() {
     return emojiGrid;
 }
 
-// Find the share button element at the top of your file
-const shareButton = document.getElementById('share-button');
-if (!shareButton) {
-    console.error('Share button element not found! Check index.html');
-} else {
-    console.log('Share button found:', shareButton);
-    // Ensure button starts disabled visually and functionally
-    shareButton.disabled = true; 
-}
-
+// Keep original shareScore function for the main share button
 function shareScore() {
-    // Don't allow sharing if the game is still in progress
     if (!state.gameOver) {
         alert("Finish the game before sharing your score!");
         return;
     }
-    
-    const tries = state.currentRow + 1; // +1 because we're 0-indexed
-    const won = state.secret === state.grid[state.currentRow - 1].join('');
-    
+    const tries = state.currentRow + 1; 
+    const won = state.secret === state.grid[state.currentRow].join(''); // Check current row on win, or last row if lost
     const emojiGrid = createEmojiGrid();
-    
     const shareText = `Panda's Wordle+ ${won ? tries : 'X'}/6\n\n${emojiGrid}\nhttps://panda2126.github.io/wordle-plus/`;
     
-    // Add WhatsApp specific sharing
-    const whatsappButton = document.createElement('button');
-    whatsappButton.textContent = 'Share to WhatsApp';
-    whatsappButton.className = 'whatsapp-share-button';
-    whatsappButton.style.display = 'block';
-    whatsappButton.style.margin = '10px auto';
-    whatsappButton.style.padding = '8px 16px';
-    whatsappButton.style.backgroundColor = '#25D366';
-    whatsappButton.style.color = 'white';
-    whatsappButton.style.border = 'none';
-    whatsappButton.style.borderRadius = '4px';
-    whatsappButton.style.cursor = 'pointer';
-    
-    whatsappButton.addEventListener('click', () => {
-        const encodedText = encodeURIComponent(shareText);
-        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
-    });
-    
-    // Check if button already exists to avoid duplicates
-    const existingButton = document.querySelector('.whatsapp-share-button');
-    if (!existingButton) {
-        // Add the button after the Share Score button
-        const shareScoreButton = document.getElementById('share-button');
-        if (shareScoreButton && shareScoreButton.parentNode) {
-            shareScoreButton.parentNode.appendChild(whatsappButton);
-        }
-    }
-    
-    // Also keep the original share functionality
     if (navigator.share) {
-        navigator.share({
-            text: shareText
-        }).catch(console.error);
+        navigator.share({ text: shareText }).catch(console.error);
     } else {
         navigator.clipboard.writeText(shareText)
             .then(() => alert('Results copied to clipboard! You can also use the WhatsApp button to share.'))
@@ -310,7 +310,7 @@ function shareScore() {
     }
 }
 
-// Add event listener (only if button was found)
+// Attach listener ONLY to the original share button
 if (shareButton) {
     shareButton.addEventListener('click', shareScore);
 }
