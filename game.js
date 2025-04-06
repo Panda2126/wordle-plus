@@ -4,31 +4,74 @@ const state = {
     grid: Array(6).fill().map(() => Array(6).fill('')),
     currentRow: 0,
     currentCol: 0,
+    gameOver: false
 };
 
 // Word list (we'll expand this later)
-const WORD_LIST = ['python', 'coding', 'gaming', 'script', 'player'];
+const WORD_LIST = ['python', 'coding', 'gaming', 'script', 'player', 'cursor', 'syntax', 'coffee', 'laptop', 'github', 'branch', 'commit'];
 
 // Initialize game
 function initGame() {
+    // Reset the game state
+    state.currentRow = 0;
+    state.currentCol = 0;
+    state.gameOver = false;
+    state.grid = Array(6).fill().map(() => Array(6).fill(''));
+    
     // Choose random word
     state.secret = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+    console.log("Secret word:", state.secret); // For debugging
+    
+    // Clear the board visually
+    document.querySelectorAll('.letter-box').forEach(box => {
+        box.textContent = '';
+        box.className = 'letter-box';
+    });
+    
+    // Reset keyboard colors
+    document.querySelectorAll('.key').forEach(key => {
+        key.className = 'key';
+    });
+    
+    // Reset share button
+    const shareButton = document.getElementById('share-button');
+    if (shareButton) {
+        shareButton.disabled = true;
+    }
+    
+    // Remove existing listeners to prevent duplicates
+    document.removeEventListener('keydown', handleKeyPress);
     
     // Add keyboard event listener
     document.addEventListener('keydown', handleKeyPress);
     
     // Add click listeners to virtual keyboard
     document.querySelectorAll('.key').forEach(key => {
+        // Remove existing listeners
+        key.replaceWith(key.cloneNode(true));
+    });
+    
+    // Re-add event listeners to fresh elements
+    document.querySelectorAll('.key').forEach(key => {
         key.addEventListener('click', () => {
-            handleKeyPress({ key: key.textContent.toLowerCase() });
+            const keyText = key.textContent.toLowerCase();
+            if (keyText === 'enter') {
+                if (state.currentCol === 6) {
+                    checkGuess();
+                }
+            } else if (keyText === '⌫') {
+                removeLetter();
+            } else if (keyText.length === 1 && isLetter(keyText) && state.currentCol < 6) {
+                addLetter(keyText);
+            }
         });
     });
 }
 
 // Handle key press
 function handleKeyPress(e) {
-    if (state.currentRow === 6) return; // Game over
-
+    if (state.gameOver) return; // Game over
+    
     const key = e.key.toLowerCase();
     
     if (key === 'enter') {
@@ -76,7 +119,13 @@ function isLetter(key) {
 // Check guess
 function checkGuess() {
     const guess = state.grid[state.currentRow].join('');
+    console.log(`Checking guess: ${guess}, current row: ${state.currentRow}`);
+    
     const row = document.querySelector(`.word-row:nth-child(${state.currentRow + 1})`);
+    if (!row) {
+        console.error(`Could not find row ${state.currentRow + 1}`);
+        return;
+    }
     
     // Create arrays for checking
     const secret = Array.from(state.secret);
@@ -104,7 +153,12 @@ function checkGuess() {
     });
     
     // Animate tiles and update keyboard
-    row.querySelectorAll('.letter-box').forEach((box, index) => {
+    const boxes = row.querySelectorAll('.letter-box');
+    if (boxes.length !== 6) {
+        console.error(`Expected 6 letter boxes, found ${boxes.length}`);
+    }
+    
+    boxes.forEach((box, index) => {
         setTimeout(() => {
             box.classList.add('flip');
             box.classList.add(result[index]);
@@ -112,34 +166,27 @@ function checkGuess() {
         }, index * 100);
     });
     
-    // --- Game End Logic ---
-    let gameJustEnded = false;
-
+    // Game end logic
     if (guess === state.secret) {
-        console.log('Game Won! Attempting to enable share button.');
-        gameEnded = true; // Set global game ended variable
-        gameJustEnded = true;
-        setTimeout(() => alert('Congratulations! You won!'), 100); // Shorten delay
-    } else if (state.currentRow === 5) { // Change to 5 since we're on the last row before incrementing
-        console.log('Game Lost! Attempting to enable share button.');
-        gameEnded = true; // Set global game ended variable
-        gameJustEnded = true;
-        setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 100); // Shorten delay
-    }
-
-    // Enable the button *if* the game just ended
-    if (gameJustEnded && document.getElementById('share-button')) {
-        document.getElementById('share-button').disabled = false;
-        console.log('Share button enabled.', document.getElementById('share-button').disabled);
-    } 
-
-    // --- Advance to next row (if game didn't end) ---
-    if (!gameJustEnded) {
+        state.gameOver = true;
+        const shareButton = document.getElementById('share-button');
+        if (shareButton) {
+            shareButton.disabled = false;
+        }
+        setTimeout(() => alert('Congratulations! You won!'), 600);
+    } else if (state.currentRow === 5) { // Last row
+        state.gameOver = true;
+        const shareButton = document.getElementById('share-button');
+        if (shareButton) {
+            shareButton.disabled = false;
+        }
+        setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 600);
+    } else {
+        // Move to the next row
         state.currentRow++;
         state.currentCol = 0;
         console.log(`Moved to row: ${state.currentRow}`);
     }
-    // --- End Advance to next row ---
 }
 
 // Update keyboard colors
@@ -176,13 +223,13 @@ initGame();
 
 function createEmojiGrid() {
     let emojiGrid = '';
-    // Get all word rows
-    const rows = document.querySelectorAll('.word-row');
     
     // For each completed row
-    for (let i = 0; i < state.currentRow; i++) {
-        // Get all letter boxes in this row
-        const boxes = rows[i].querySelectorAll('.letter-box');
+    for (let i = 0; i <= Math.min(state.currentRow, 5); i++) {
+        const row = document.querySelector(`.word-row:nth-child(${i + 1})`);
+        if (!row) continue;
+        
+        const boxes = row.querySelectorAll('.letter-box');
         
         // Add emoji for each box based on its class
         for (let box of boxes) {
@@ -190,7 +237,7 @@ function createEmojiGrid() {
                 emojiGrid += '🟩';
             } else if (box.classList.contains('present')) {
                 emojiGrid += '🟨';
-            } else {
+            } else if (box.classList.contains('filled') || box.classList.contains('absent')) {
                 emojiGrid += '⬛';
             }
         }
@@ -211,16 +258,13 @@ if (!shareButton) {
 
 function shareScore() {
     // Don't allow sharing if the game is still in progress
-    if (state.currentRow < 1 || (!gameEnded && state.currentRow < 6)) {
+    if (!state.gameOver) {
         alert("Finish the game before sharing your score!");
         return;
     }
     
-    const tries = state.currentRow;
-    // Determine if the player won by checking if the last row matches the secret word
-    const lastGuessRow = Math.min(tries, 6) - 1;
-    const lastGuess = state.grid[lastGuessRow].join('');
-    const won = lastGuess === state.secret;
+    const tries = state.currentRow + 1; // +1 because we're 0-indexed
+    const won = state.secret === state.grid[state.currentRow - 1].join('');
     
     const emojiGrid = createEmojiGrid();
     
@@ -236,9 +280,6 @@ function shareScore() {
             .catch(() => alert('Failed to copy results'));
     }
 }
-
-// Add a global variable to track game state
-let gameEnded = false;
 
 // Add event listener (only if button was found)
 if (shareButton) {
