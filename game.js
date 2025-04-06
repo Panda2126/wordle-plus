@@ -294,7 +294,7 @@ function shareScore() {
         // Add the button after the Share Score button
         const shareScoreButton = document.getElementById('share-button');
         if (shareScoreButton && shareScoreButton.parentNode) {
-            shareScoreButton.parentNode.insertBefore(whatsappButton, shareScoreButton.nextSibling);
+            shareScoreButton.parentNode.appendChild(whatsappButton);
         }
     }
     
