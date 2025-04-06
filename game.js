@@ -112,7 +112,7 @@ function checkGuess() {
         }, index * 100);
     });
     
-    // Check if game is won or lost
+    // --- Game End Logic ---
     let gameJustEnded = false;
 
     if (guess === state.secret) {
@@ -120,13 +120,13 @@ function checkGuess() {
         state.currentRow++;
         state.currentCol = 0;
         gameJustEnded = true;
-        setTimeout(() => alert('Congratulations! You won!'), 600); // Delay alert slightly
+        setTimeout(() => alert('Congratulations! You won!'), 100); // Shorten delay
     } else if (state.currentRow === 6) {
         console.log('Game Lost! Attempting to enable share button.');
         state.currentRow++;
         state.currentCol = 0;
         gameJustEnded = true;
-        setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 600); // Delay alert slightly
+        setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 100); // Shorten delay
     }
 
     // Enable the button *if* the game just ended
@@ -134,6 +134,14 @@ function checkGuess() {
         document.getElementById('share-button').disabled = false;
         console.log('Share button enabled.', document.getElementById('share-button').disabled);
     } 
+
+    // --- Advance to next row (if game didn't end) ---
+    if (!gameJustEnded) {
+        state.currentRow++;
+        state.currentCol = 0;
+        console.log(`Moved to row: ${state.currentRow}`);
+    }
+    // --- End Advance to next row ---
 }
 
 // Update keyboard colors
