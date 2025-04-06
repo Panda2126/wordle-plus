@@ -164,6 +164,9 @@ function createEmojiGrid() {
     return emojiGrid;
 }
 
+// Find the share button element at the top of your file
+const shareButton = document.getElementById('share-button'); // Or use querySelector if you used a class
+
 function shareScore() {
     if (state.currentRow === 6) return;
     
@@ -184,5 +187,5 @@ function shareScore() {
     }
 }
 
-// Add event listener for share button
-document.querySelector('.share-button').addEventListener('click', shareScore);
+// Update the event listener to use the correct reference
+shareButton.addEventListener('click', shareScore);
