@@ -114,9 +114,15 @@ function checkGuess() {
     
     // Check if game is won or lost
     if (guess === state.secret) {
-        setTimeout(() => alert('Congratulations! You won!'), 600);
-    } else if (state.currentRow === 5) {
-        setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 600);
+        state.currentRow++;
+        state.currentCol = 0;
+        alert('Congratulations! You won!');
+        return;
+    } else if (state.currentRow === 6) {
+        state.currentRow++;
+        state.currentCol = 0;
+        alert(`Game Over! The word was ${state.secret.toUpperCase()}`);
+        return;
     }
     
     state.currentRow++;
@@ -138,3 +144,45 @@ function updateKeyboard(letter, result) {
 
 // Start the game
 initGame();
+
+function createEmojiGrid() {
+    let emojiGrid = '';
+    const rows = document.querySelectorAll('.row');
+    for (let i = 0; i < state.currentRow; i++) {
+        const tiles = rows[i].querySelectorAll('.tile');
+        for (let tile of tiles) {
+            if (tile.classList.contains('correct')) {
+                emojiGrid += '🟩';
+            } else if (tile.classList.contains('present')) {
+                emojiGrid += '🟨';
+            } else {
+                emojiGrid += '⬛';
+            }
+        }
+        emojiGrid += '\n';
+    }
+    return emojiGrid;
+}
+
+function shareScore() {
+    if (state.currentRow === 6) return;
+    
+    const tries = state.currentRow;
+    const won = tries === 6;
+    const emojiGrid = createEmojiGrid();
+    
+    const shareText = `Panda's Wordle+ ${won ? tries : 'X'}/6\n\n${emojiGrid}\nhttps://panda2126.github.io/wordle-plus/`;
+    
+    if (navigator.share) {
+        navigator.share({
+            text: shareText
+        }).catch(console.error);
+    } else {
+        navigator.clipboard.writeText(shareText)
+            .then(() => alert('Results copied to clipboard!'))
+            .catch(() => alert('Failed to copy results'));
+    }
+}
+
+// Add event listener for share button
+document.querySelector('.share-button').addEventListener('click', shareScore);
