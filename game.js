@@ -113,20 +113,27 @@ function checkGuess() {
     });
     
     // Check if game is won or lost
+    let gameJustEnded = false;
+
     if (guess === state.secret) {
+        console.log('Game Won! Attempting to enable share button.');
         state.currentRow++;
         state.currentCol = 0;
-        alert('Congratulations! You won!');
-        return;
+        gameJustEnded = true;
+        setTimeout(() => alert('Congratulations! You won!'), 600); // Delay alert slightly
     } else if (state.currentRow === 6) {
+        console.log('Game Lost! Attempting to enable share button.');
         state.currentRow++;
         state.currentCol = 0;
-        alert(`Game Over! The word was ${state.secret.toUpperCase()}`);
-        return;
+        gameJustEnded = true;
+        setTimeout(() => alert(`Game Over! The word was ${state.secret.toUpperCase()}`), 600); // Delay alert slightly
     }
-    
-    state.currentRow++;
-    state.currentCol = 0;
+
+    // Enable the button *if* the game just ended
+    if (gameJustEnded && document.getElementById('share-button')) {
+        document.getElementById('share-button').disabled = false;
+        console.log('Share button enabled.', document.getElementById('share-button').disabled);
+    } 
 }
 
 // Update keyboard colors
@@ -165,7 +172,14 @@ function createEmojiGrid() {
 }
 
 // Find the share button element at the top of your file
-const shareButton = document.getElementById('share-button'); // Or use querySelector if you used a class
+const shareButton = document.getElementById('share-button');
+if (!shareButton) {
+    console.error('Share button element not found! Check index.html');
+} else {
+    console.log('Share button found:', shareButton);
+    // Ensure button starts disabled visually and functionally
+    shareButton.disabled = true; 
+}
 
 function shareScore() {
     if (state.currentRow === 6) return;
@@ -187,5 +201,7 @@ function shareScore() {
     }
 }
 
-// Update the event listener to use the correct reference
-shareButton.addEventListener('click', shareScore);
+// Add event listener (only if button was found)
+if (shareButton) {
+    shareButton.addEventListener('click', shareScore);
+}
