@@ -270,14 +270,43 @@ function shareScore() {
     
     const shareText = `Panda's Wordle+ ${won ? tries : 'X'}/6\n\n${emojiGrid}\nhttps://panda2126.github.io/wordle-plus/`;
     
+    // Add WhatsApp specific sharing
+    const whatsappButton = document.createElement('button');
+    whatsappButton.textContent = 'Share to WhatsApp';
+    whatsappButton.className = 'whatsapp-share-button';
+    whatsappButton.style.display = 'block';
+    whatsappButton.style.margin = '10px auto';
+    whatsappButton.style.padding = '8px 16px';
+    whatsappButton.style.backgroundColor = '#25D366';
+    whatsappButton.style.color = 'white';
+    whatsappButton.style.border = 'none';
+    whatsappButton.style.borderRadius = '4px';
+    whatsappButton.style.cursor = 'pointer';
+    
+    whatsappButton.addEventListener('click', () => {
+        const encodedText = encodeURIComponent(shareText);
+        window.open(`https://wa.me/?text=${encodedText}`, '_blank');
+    });
+    
+    // Check if button already exists to avoid duplicates
+    const existingButton = document.querySelector('.whatsapp-share-button');
+    if (!existingButton) {
+        // Add the button after the Share Score button
+        const shareScoreButton = document.getElementById('share-button');
+        if (shareScoreButton && shareScoreButton.parentNode) {
+            shareScoreButton.parentNode.insertBefore(whatsappButton, shareScoreButton.nextSibling);
+        }
+    }
+    
+    // Also keep the original share functionality
     if (navigator.share) {
         navigator.share({
             text: shareText
         }).catch(console.error);
     } else {
         navigator.clipboard.writeText(shareText)
-            .then(() => alert('Results copied to clipboard!'))
-            .catch(() => alert('Failed to copy results'));
+            .then(() => alert('Results copied to clipboard! You can also use the WhatsApp button to share.'))
+            .catch(() => alert('Failed to copy results. Try using the WhatsApp button instead.'));
     }
 }
 

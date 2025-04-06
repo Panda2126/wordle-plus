@@ -150,3 +150,22 @@ h1 {
 .share-button:hover:not(:disabled) {
     opacity: 0.8;
 }
+
+/* Add styles for the WhatsApp button */
+.whatsapp-share-button {
+    display: block;
+    margin: 10px auto;
+    padding: 12px 24px;
+    background-color: #25D366;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.whatsapp-share-button:hover {
+    background-color: #128C7E;
+}
